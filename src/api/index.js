@@ -101,5 +101,7 @@ export default {
   login:data => postRequest({url:'/api/customer/login/loginByPassword',data}),//登陆
   getGlassesList:data => postRequest({url:'/api/customer/remote/getGlassesList',data}),//获取智能眼镜列表
   sendMessage:data=> postImRequest({url:'/api/message/send',data}),//发送呼叫信息
+  getStaffNameHead:data=> postRequest({url:'/api/customer/remote/getStaffNameHead',data}),//获取个人信息
+  underwayVideoRoomList:data=> postRequest({url:'/api/customer/remote/underwayVideoRoomList',data}),//获取房间列表
 }
 

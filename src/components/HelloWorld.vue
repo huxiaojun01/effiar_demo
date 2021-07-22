@@ -53,10 +53,11 @@
             return {
                 msg: 'hello',
                 form: {
-                    phone: '',
-                    password: ''
+                    phone: '13118500038',
+                    password: '123456'
                 },
                 glassesList: [],
+                user: {},
                 localMemberId: "",
                 timerFlag: '',
                 calledNum: '',//保留被呼叫者电话号码
@@ -81,10 +82,11 @@
                     if (res.code === 1 && res.data && res.data.token) {
                         console.log('业务系统登录成功')
                         Cookies.set('appToken', res.data.token, {expires: 10})
-                        Cookies.set('imToken', res.data.token, {expires: 10})
+                        Cookies.set('imToken', res.data.imtoken, {expires: 10})
                         window.localStorage.setItem('account', phoneNum)
                         console.log(window.localStorage.getItem('account'))
                         this.getGlassesList()// 获取眼镜
+                        this.getStaffNameHead()
                         CIMWebBridge.connection()// 建立链接的
 
                         //5s重新连接
@@ -92,7 +94,7 @@
                             if (!CIMWebBridge.sendflags()) {//拿到绑定值，在链接失败的时候去建立链接
                                 CIMWebBridge.connection();//建立链接的
                             }
-                        }, 5000)
+                        }, 5000);
                     }
                 })
             },
@@ -108,12 +110,23 @@
                     }
                 })
             },
+            // 获取个人信息
+            getStaffNameHead() {
+                api.getStaffNameHead().then(response => {
+                    const res = response.data
+                    if (res.code === 1) {
+                        console.log('用户信息')
+                        console.log(res.data)
+                        this.user = res.data
+                    }
+                })
+            },
             //呼叫
             toShowCallModal(phoneNum) {
                 this.calledNum = phoneNum;
                 this.$store.commit('updateCallStatus', true);//web主动呼叫 更新状态
                 let content = '';
-                content = "Call#ControlCenter" + "#" + this.form.phone + "#集控中心" + "#" + 'false';
+                content = "Call#Start" + "#" + this.form.phone + "#"+ this.user.name + "#" + 'false';
                 this.sendMessageApi(phoneNum, content)
             },
             //呼叫数据整理并请求
@@ -134,6 +147,44 @@
                     }
                 })
             },
+            //收到呼叫
+            getCall(phoneNum) {
+                let contents = '';
+                // contents = "Call#Accept" + "#" + this.form.phone + "#"+ this.user.name + "#" + 'false';
+                /**
+                 * content: Call#Accept#13118500038#胡专家#https://call.effiar.com/resourcesstring
+                 * action: 0
+                 * receiver: dev811011111
+                 * format: 0
+                 */
+                const data = {
+                    receiver: 'dev811011111',
+                    // sender: this.form.phone,
+                    content: 'Call#Accept#13118500038#胡专家#https://call.effiar.com/resourcesstring',
+                    action: '0',
+                    format: '0'
+                }
+                api.sendMessage(data).then(res => {
+                    console.log(res)
+                    if (res.data.code === 200) {
+                        this.underwayVideoRoomList(1);
+                    }
+                })
+            },
+            //获取房间列表
+            underwayVideoRoomList(roomStatus) {
+                const data = {
+                    pageNum: 1,
+                    roomStatus: roomStatus
+                }
+                api.underwayVideoRoomList(data).then(res => {
+                    console.log(res.data)
+                    if (res.data.code === 200) {
+                        // console.log('666666666666666666666')
+                        // this.messageTitle = '-----呼叫成功，请等待几秒-----'
+                    }
+                })
+            },
             //加入房间
             joinToRoom(roomId, roomToken) {
                 this.localMemberId = parseInt(Math.random() * 9999999 + 1).toString();
@@ -151,12 +202,16 @@
                         roomId,
                         "audio",
                         roomToken,
+
+                        // 加入房间成功回调.
                         function () {
-                            // 加入房间成功回调.
+                            console.log("加入房间成功回调.");
                             room_members.set(this.localMemberId, "本地专家");
                         },
+
+                        // 获取成员列表回调.
                         function (members) {
-                            // 获取成员列表回调.
+                            console.log("获取成员列表回调.");
                             // console.log("joinRoom onGetMemberList members=%o", members);
                             const {memberList} = members;
                             let isHaveGlass = false;
@@ -175,54 +230,76 @@
                                 });
                             }
                         },
+
+                        // 加入房间失败回调.
                         function () {
-                            // 加入房间失败回调.
+                            console.log("加入房间失败回调.");
                             shinevv.leaveRoom();
                             shinevv = null;
 
                             room_members.delete(this.localMemberId);
                             _this.delVideoList(this.localMemberId);
                         },
+
+                        // 打开音视频失败回调.
                         function (error) {
-                            // 打开音视频失败回调.
+                            console.log("打开音视频失败回调.");
                         },
+
+                        // Socket失去连接回调.
                         function () {
-                            // Socket失去连接回调.
+                            console.log("Socket失去连接回调.");
                             shinevv.leaveRoom();
                             shinevv = null;
                             room_members.clear();
                             _this.delVideoList(this.localMemberId);
                         },
+
+                        // 房间关闭回调.
                         function () {
-                            // 房间关闭回调.
+                            console.log("房间关闭回调.");
                             shinevv.leaveRoom();
                             shinevv = null;
                             room_members.clear();
                             _this.delVideoList(this.localMemberId);
                         },
+
+                        // 加入房间后的新成员加入房间回调.
                         function (remote_memberId, displayName) {
-                            // 加入房间后的新成员加入房间回调.
+                            console.log("加入房间后的新成员加入房间回调.");
                             room_members.set(remote_memberId, displayName);
                         },
+
+                        // 成员离开房间回调.
                         function (remote_memberId) {
-                            // 成员离开房间回调.
+                            console.log("成员离开房间回调.");
                             _this.delVideoList(remote_memberId);
                             room_members.delete(remote_memberId);
                         },
+
+                        // 成员媒体状态改变回调.
                         function (memberId, kind, bOpen, track) {
-                            // 成员媒体状态改变回调.
+                            console.log("成员媒体状态改变回调.");
                         },
+
+                        // 收到自定义消息回调.
                         function (memberId, data) {
-                            // 收到自定义消息回调.
+                            console.log("收到自定义消息回调.");
                         },
+
+                        // 房间计时回调.
                         function (room_last_time) {
-                            // 房间计时回调.
+                            console.log("房间计时回调.");
                         },
+
+                        // 成员音量改变回调.
                         function (peerName, newVolume) {
-                            // 成员音量改变回调.
+                            console.log("成员音量改变回调.");
                         },
+
+                        // 收到语音激励回调.
                         function (peerName) {
-                            // 收到语音激励回调.
+                            console.log("收到语音激励回调.");
                         }
                     );
                 }, 3000);
@@ -298,6 +375,9 @@
                     }
                     this.$store.commit('updateCallStatus', false);
                 }
+                // else {
+                //     this.getCall(info[2]);
+                // }
 
             }
         }
