@@ -151,12 +151,6 @@
             getCall(phoneNum) {
                 let contents = '';
                 // contents = "Call#Accept" + "#" + this.form.phone + "#"+ this.user.name + "#" + 'false';
-                /**
-                 * content: Call#Accept#13118500038#胡专家#https://call.effiar.com/resourcesstring
-                 * action: 0
-                 * receiver: dev811011111
-                 * format: 0
-                 */
                 const data = {
                     receiver: 'dev811011111',
                     // sender: this.form.phone,
@@ -167,7 +161,7 @@
                 api.sendMessage(data).then(res => {
                     console.log(res)
                     if (res.data.code === 200) {
-                        this.underwayVideoRoomList(1);
+                        // this.underwayVideoRoomList(1);
                     }
                 })
             },
@@ -187,6 +181,7 @@
             },
             //加入房间
             joinToRoom(roomId, roomToken) {
+                console.log('进入joinToRoom');
                 this.localMemberId = parseInt(Math.random() * 9999999 + 1).toString();
                 shinevv = null;
                 shinevv = new Shinevv(this.localMemberId,'Center',{},'39.97.172.191',34433)
@@ -194,6 +189,7 @@
             },
             //具体的显示视频
             showRoomVideo(roomId, roomToken) {
+                console.log('进入showRoomVideo');
                 let _this = this;
                 let t;
                 clearTimeout(t)
@@ -209,7 +205,7 @@
                             room_members.set(this.localMemberId, "本地专家");
                         },
 
-                        // 获取成员列表回调.
+                        // 获取成员列表回调.c
                         function (members) {
                             console.log("获取成员列表回调.");
                             // console.log("joinRoom onGetMemberList members=%o", members);
@@ -232,7 +228,7 @@
                         },
 
                         // 加入房间失败回调.
-                        function () {
+                        function (reason) {
                             console.log("加入房间失败回调.");
                             shinevv.leaveRoom();
                             shinevv = null;
@@ -242,7 +238,7 @@
                         },
 
                         // 打开音视频失败回调.
-                        function (error) {
+                        function () {
                             console.log("打开音视频失败回调.");
                         },
 
@@ -256,7 +252,7 @@
                         },
 
                         // 房间关闭回调.
-                        function () {
+                        function (reason) {
                             console.log("房间关闭回调.");
                             shinevv.leaveRoom();
                             shinevv = null;
@@ -271,7 +267,7 @@
                         },
 
                         // 成员离开房间回调.
-                        function (remote_memberId) {
+                        function (remote_memberId,displayName) {
                             console.log("成员离开房间回调.");
                             _this.delVideoList(remote_memberId);
                             room_members.delete(remote_memberId);
@@ -282,7 +278,7 @@
                             console.log("成员媒体状态改变回调.");
                         },
 
-                        // 收到自定义消息回调.
+                        // 收到自定义消息回调.c
                         function (memberId, data) {
                             console.log("收到自定义消息回调.");
                         },
@@ -297,15 +293,26 @@
                             console.log("成员音量改变回调.");
                         },
 
+                        function(peerName, method){
+                            // 收到屏幕共享流回调
+
+                        },
+
                         // 收到语音激励回调.
                         function (peerName) {
                             console.log("收到语音激励回调.");
+                        },
+                        function(memberId, deviceId, bOpen, track){
+                            // 对端视频设备回调.
+                            console.log('onRecvDeviceVideo memberId = %s deviceId = %s  bOpen = %s track = %o', memberId, deviceId, bOpen.toString(), track);
+
                         }
                     );
                 }, 3000);
             },
             //加入具体的div中
             putVideoList(memberId) {
+                console.log('进入putVideoList');
                 let videoId = "video_" + String(memberId);
                 console.log(videoId + "videoId")
                 if (!document.getElementById(videoId) !== undefined) {
@@ -323,6 +330,7 @@
                 }
             },
             exitRoom() {
+                console.log('进入exitRoom');
                 if (!shinevv)
                     return;
                 shinevv.leaveRoom();
@@ -331,11 +339,13 @@
                 this.delVideoList(this.localMemberId);
             },
             delVideoList(memberId) {
+                console.log('进入delVideoList');
                 let videoId = "video_" + String(memberId);
                 $("#" + videoId + "").remove()
                 this.closeRoom();
             },
             closeRoom() {//离开房间
+                console.log('进入closeRoom');
                 let content = "Call#ControlCenterFinish" + "#" + this.form.phone + "#集控中心" + "#" + 'finish';
                 const data = {
                     receiver: this.calledNum,
@@ -357,6 +367,7 @@
         watch: {
             //链接状态下才做这件事
             getContent: function (newVal) {
+                console.log("进入getContent");
                 // debugger
                 const content = newVal.content;
                 const info = content.split("#");
