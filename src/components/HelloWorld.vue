@@ -13,6 +13,17 @@
                 </el-form-item>
             </el-form>
         </div>
+
+        <el-dialog
+                title="提示"
+                :visible.sync="dialogVisible"
+                width="30%">
+            <span>接通信息</span>
+            <span slot="footer" class="dialog-footer">
+                <el-button type="primary" @click="sendAccpet">确 定</el-button>
+            </span>
+        </el-dialog>
+
         <h3>在线列表区域</h3>
         <div class="showLisData">
             <div class="buttonBox" v-for="(item,index) in glassesList" :key="index">
@@ -62,6 +73,7 @@
                 timerFlag: '',
                 calledNum: '',//保留被呼叫者电话号码
                 messageTitle: '',
+                dialogVisible: false,
             }
         },
         computed: {
@@ -73,7 +85,6 @@
         },
         methods: {
             //登录部分
-
             onSubmit() {
                 let phoneNum = this.form.phone
                 let securityCode = this.form.password
@@ -147,24 +158,13 @@
                     }
                 })
             },
-            //收到呼叫
-            getCall(phoneNum) {
-                let contents = '';
-                // contents = "Call#Accept" + "#" + this.form.phone + "#"+ this.user.name + "#" + 'false';
-                const data = {
-                    receiver: 'dev811011111',
-                    // sender: this.form.phone,
-                    content: 'Call#Accept#13118500038#胡专家#https://call.effiar.com/resourcesstring',
-                    action: '0',
-                    format: '0'
-                }
-                api.sendMessage(data).then(res => {
-                    console.log(res)
-                    if (res.data.code === 200) {
-                        // this.underwayVideoRoomList(1);
-                    }
-                })
+
+            //发送accept
+            sendAccpet() {
+                this.dialogVisible = false;
+                this.sendMessageApi(this.calledNum, 'Call#Accept#13118500038#胡专家#https://call.effiar.com/resourcesstring');
             },
+
             //获取房间列表
             underwayVideoRoomList(roomStatus) {
                 const data = {
@@ -371,7 +371,9 @@
                 // debugger
                 const content = newVal.content;
                 const info = content.split("#");
+                console.log("#################################");
                 console.log(info)
+                console.log("#################################");
                 console.log(this.getCallStatus)
                 //const _this = this;
                 //当响应信息变化，同时
@@ -385,11 +387,18 @@
                         this.joinToRoom(roomId, roomToken);
                     }
                     this.$store.commit('updateCallStatus', false);
+                } else {    //眼镜端主动呼叫
+                    if(info[1] === 'Room'){
+                        const roomId = info[2];
+                        const roomToken = info[3];
+                        console.log('准备加入房间')
+                        console.log(roomId, roomToken)
+                        this.joinToRoom(roomId, roomToken);
+                    } else {
+                        this.dialogVisible = true;
+                        this.calledNum = info[2];
+                    }
                 }
-                // else {
-                //     this.getCall(info[2]);
-                // }
-
             }
         }
     }
